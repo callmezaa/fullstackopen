@@ -1,3 +1,4 @@
+```mermaid
 sequenceDiagram
 participant browser
 participant server
@@ -35,3 +36,4 @@ participant server
     deactivate server
 
     Note right of browser: JavaScript renders all notes, including the new note, using the DOM API
+```
