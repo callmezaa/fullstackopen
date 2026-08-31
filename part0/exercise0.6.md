@@ -1,3 +1,4 @@
+```mermaid
 sequenceDiagram
 participant browser
 participant server
@@ -14,3 +15,4 @@ participant server
 
     Note right of browser: JavaScript updates the page without reloading it
     Note right of browser: The new note is added to the DOM
+```
