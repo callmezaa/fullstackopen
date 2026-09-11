@@ -5,7 +5,7 @@ if (process.argv.length < 3) {
   process.exit(1)
 }
 
-const password = process.argv[2]
+const password = encodeURIComponent(process.argv[2])
 
 // TODO(3.12): ganti dengan user + host Atlas kamu.
 // Contoh: mongodb+srv://phonebookuser:<password>@cluster0.abc123.mongodb.net/phonebook?retryWrites=true&w=majority
