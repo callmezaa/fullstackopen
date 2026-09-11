@@ -101,7 +101,8 @@ const App = () => {
           showNotification(`${newName}'s number was updated`, "success");
         })
         .catch((error) => {
-          showNotification(`Information of ${newName} has already been removed from server`, "error");
+          const serverError = error.response?.data?.error
+          showNotification(serverError || `Information of ${newName} has already been removed from server`, "error");
         });
 
       return;
@@ -117,7 +118,8 @@ const App = () => {
         showNotification(`${newName} was added to phonebook`, "success");
       })
       .catch((error) => {
-        showNotification(`Failed to add ${newName}`, "error");
+        const serverError = error.response?.data?.error
+        showNotification(serverError || `Failed to add ${newName}`, "error");
       });
   };
 

@@ -7,10 +7,9 @@ if (process.argv.length < 3) {
 
 const password = encodeURIComponent(process.argv[2])
 
-// TODO(3.12): ganti dengan user + host Atlas kamu.
-// Contoh: mongodb+srv://phonebookuser:<password>@cluster0.abc123.mongodb.net/phonebook?retryWrites=true&w=majority
-// Password JANGAN di-hardcode — selalu lewat argv.
-const url = `mongodb+srv://kenzamariyan:${password}@cluster0.cjc8uee.mongodb.net/phonebook?retryWrites=true&w=majority`
+// Atlas standard string (bypass SRV) untuk DNS lokal yang blokir query SRV.
+// Sama dengan +srv, cuma host di-expand manual.
+const url = `mongodb://kenzamariyan:${password}@ac-bqtkd3r-shard-00-00.cjc8uee.mongodb.net:27017,ac-bqtkd3r-shard-00-01.cjc8uee.mongodb.net:27017,ac-bqtkd3r-shard-00-02.cjc8uee.mongodb.net:27017/phonebook?ssl=true&replicaSet=atlas-23bcux-shard-0&authSource=admin&retryWrites=true&w=majority`
 
 mongoose.set('strictQuery', false)
 mongoose.connect(url)
