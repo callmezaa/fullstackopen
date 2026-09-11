@@ -8,4 +8,4 @@ Full Stack Open — University of Helsinki.
 - Backend: `part3/phonebook-backend` (`npm run dev`, `npm start`)
 - Production: backend serves `dist/` static + `/api/persons`
 
-Live app: TODO — paste Render/Fly URL here after deploy (3.10), e.g. `https://phonebook-backend-xxxx.onrender.com`
+Live app: https://fullstackopen-sage.vercel.app/ (Vercel, backend + `dist/` static, 3.10/3.21)
