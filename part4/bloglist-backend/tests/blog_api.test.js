@@ -125,12 +125,13 @@ test('blog without url is not added (400)', async () => {
   assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
 })
 
-test('a blog can be deleted', async () => {
+test('a blog can be deleted by its creator', async () => {
   const blogsAtStart = await helper.blogsInDb()
   const blogToDelete = blogsAtStart[0]
 
   await api
     .delete(`/api/blogs/${blogToDelete.id}`)
+    .set('Authorization', `Bearer ${token}`)
     .expect(204)
 
   const blogsAtEnd = await helper.blogsInDb()
@@ -138,6 +139,45 @@ test('a blog can be deleted', async () => {
 
   const titles = blogsAtEnd.map((blog) => blog.title)
   assert.ok(!titles.includes(blogToDelete.title))
+})
+
+test('a blog cannot be deleted without a token', async () => {
+  const blogsAtStart = await helper.blogsInDb()
+  const blogToDelete = blogsAtStart[0]
+
+  await api
+    .delete(`/api/blogs/${blogToDelete.id}`)
+    .expect(401)
+
+  const blogsAtEnd = await helper.blogsInDb()
+  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
+})
+
+test('a blog cannot be deleted by another user', async () => {
+  const newUser = {
+    username: 'mluukkai',
+    name: 'Matti Luukkainen',
+    password: 'salainen',
+  }
+  await api.post('/api/users').send(newUser).expect(201)
+
+  const loginResponse = await api
+    .post('/api/login')
+    .send({ username: 'mluukkai', password: 'salainen' })
+  const otherToken = loginResponse.body.token
+
+  const blogsAtStart = await helper.blogsInDb()
+  const blogToDelete = blogsAtStart[0]
+
+  const result = await api
+    .delete(`/api/blogs/${blogToDelete.id}`)
+    .set('Authorization', `Bearer ${otherToken}`)
+    .expect(401)
+
+  assert.ok(result.body.error)
+
+  const blogsAtEnd = await helper.blogsInDb()
+  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
 })
 
 test('likes of a blog can be updated', async () => {  const blogsAtStart = await helper.blogsInDb()
