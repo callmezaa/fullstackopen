@@ -130,6 +130,30 @@ describe('when there is initially one user in db', () => {
     const usersAtEnd = await helper.usersInDb()
     assert.strictEqual(usersAtEnd.length, usersAtStart.length)
   })
+
+  test('users contain the blogs they created', async () => {
+    const usersAtStart = await helper.usersInDb()
+    const rootUser = usersAtStart.find((u) => u.username === 'root')
+
+    const newBlog = {
+      title: 'React patterns',
+      author: 'Michael Chan',
+      url: 'https://reactpatterns.com/',
+      likes: 7,
+      userId: rootUser.id
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(201)
+
+    const response = await api.get('/api/users')
+    const rootAfter = response.body.find((u) => u.username === 'root')
+
+    assert.strictEqual(rootAfter.blogs.length, 1)
+    assert.strictEqual(rootAfter.blogs[0].title, 'React patterns')
+  })
 })
 
 after(async () => {

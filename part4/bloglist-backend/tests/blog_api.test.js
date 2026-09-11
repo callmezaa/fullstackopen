@@ -2,15 +2,27 @@ const { test, describe, beforeEach, after } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
+const bcrypt = require('bcryptjs')
 const app = require('../app')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const helper = require('./test_helper')
 
 const api = supertest(app)
 
+let userId = null
+
 beforeEach(async () => {
   await Blog.deleteMany({})
-  await Blog.insertMany(helper.initialBlogs)
+  await User.deleteMany({})
+
+  const passwordHash = await bcrypt.hash('sekret', 10)
+  const user = new User({ username: 'root', passwordHash })
+  const savedUser = await user.save()
+  userId = savedUser._id.toString()
+
+  const blogsWithUser = helper.initialBlogs.map((blog) => ({ ...blog, user: userId }))
+  await Blog.insertMany(blogsWithUser)
 })
 
 test('blogs are returned as json and with correct amount', async () => {
@@ -39,7 +51,8 @@ test('a valid blog can be added', async () => {
     title: 'Canonical string reduction',
     author: 'Edsger W. Dijkstra',
     url: 'http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html',
-    likes: 12
+    likes: 12,
+    userId: userId
   }
 
   await api
@@ -59,7 +72,8 @@ test('likes defaults to zero when missing', async () => {
   const newBlog = {
     title: 'First class tests',
     author: 'Robert C. Martin',
-    url: 'http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll'
+    url: 'http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll',
+    userId: userId
   }
 
   const response = await api
@@ -75,7 +89,8 @@ test('blog without title is not added (400)', async () => {
   const newBlog = {
     author: 'Robert C. Martin',
     url: 'http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll',
-    likes: 10
+    likes: 10,
+    userId: userId
   }
 
   await api
@@ -91,7 +106,8 @@ test('blog without url is not added (400)', async () => {
   const newBlog = {
     title: 'First class tests',
     author: 'Robert C. Martin',
-    likes: 10
+    likes: 10,
+    userId: userId
   }
 
   await api
@@ -118,8 +134,7 @@ test('a blog can be deleted', async () => {
   assert.ok(!titles.includes(blogToDelete.title))
 })
 
-test('likes of a blog can be updated', async () => {
-  const blogsAtStart = await helper.blogsInDb()
+test('likes of a blog can be updated', async () => {  const blogsAtStart = await helper.blogsInDb()
   const blogToUpdate = blogsAtStart[0]
 
   const updatedData = { ...blogToUpdate, likes: blogToUpdate.likes + 10 }
@@ -135,6 +150,16 @@ test('likes of a blog can be updated', async () => {
   const blogsAtEnd = await helper.blogsInDb()
   const updatedBlog = blogsAtEnd.find((blog) => blog.id === blogToUpdate.id)
   assert.strictEqual(updatedBlog.likes, blogToUpdate.likes + 10)
+})
+
+test('blogs contain info of the creator', async () => {
+  const response = await api.get('/api/blogs')
+
+  assert.strictEqual(response.body.length, helper.initialBlogs.length)
+  response.body.forEach((blog) => {
+    assert.ok(blog.user)
+    assert.strictEqual(blog.user.username, 'root')
+  })
 })
 
 after(async () => {
