@@ -36,6 +36,22 @@ app.get('/info', (req, res) => {
   res.send(`<p>Phonebook has info for ${count} people</p><p>${date}</p>`)
 })
 
+app.get('/api/persons/:id', (req, res) => {
+  const id = req.params.id
+  const person = persons.find(p => p.id === id)
+  if (person) {
+    res.json(person)
+  } else {
+    res.status(404).json({ error: 'person not found' })
+  }
+})
+
+app.delete('/api/persons/:id', (req, res) => {
+  const id = req.params.id
+  persons = persons.filter(p => p.id !== id)
+  res.status(204).end()
+})
+
 const PORT = 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
