@@ -11,6 +11,7 @@ const helper = require('./test_helper')
 const api = supertest(app)
 
 let userId = null
+let token = null
 
 beforeEach(async () => {
   await Blog.deleteMany({})
@@ -20,6 +21,11 @@ beforeEach(async () => {
   const user = new User({ username: 'root', passwordHash })
   const savedUser = await user.save()
   userId = savedUser._id.toString()
+
+  const loginResponse = await api
+    .post('/api/login')
+    .send({ username: 'root', password: 'sekret' })
+  token = loginResponse.body.token
 
   const blogsWithUser = helper.initialBlogs.map((blog) => ({ ...blog, user: userId }))
   await Blog.insertMany(blogsWithUser)
@@ -51,12 +57,12 @@ test('a valid blog can be added', async () => {
     title: 'Canonical string reduction',
     author: 'Edsger W. Dijkstra',
     url: 'http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html',
-    likes: 12,
-    userId: userId
+    likes: 12
   }
 
   await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
     .send(newBlog)
     .expect(201)
     .expect('Content-Type', /application\/json/)
@@ -72,12 +78,12 @@ test('likes defaults to zero when missing', async () => {
   const newBlog = {
     title: 'First class tests',
     author: 'Robert C. Martin',
-    url: 'http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll',
-    userId: userId
+    url: 'http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll'
   }
 
   const response = await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
     .send(newBlog)
     .expect(201)
     .expect('Content-Type', /application\/json/)
@@ -89,12 +95,12 @@ test('blog without title is not added (400)', async () => {
   const newBlog = {
     author: 'Robert C. Martin',
     url: 'http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll',
-    likes: 10,
-    userId: userId
+    likes: 10
   }
 
   await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
     .send(newBlog)
     .expect(400)
 
@@ -106,12 +112,12 @@ test('blog without url is not added (400)', async () => {
   const newBlog = {
     title: 'First class tests',
     author: 'Robert C. Martin',
-    likes: 10,
-    userId: userId
+    likes: 10
   }
 
   await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
     .send(newBlog)
     .expect(400)
 
@@ -160,6 +166,44 @@ test('blogs contain info of the creator', async () => {
     assert.ok(blog.user)
     assert.strictEqual(blog.user.username, 'root')
   })
+})
+
+test('a blog created with a token is attributed to the token user', async () => {
+  const newBlog = {
+    title: 'Type wars',
+    author: 'Robert C. Martin',
+    url: 'http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html',
+    likes: 2
+  }
+
+  const response = await api
+    .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  assert.strictEqual(response.body.user.toString(), userId)
+
+  const blogsAtEnd = await helper.blogsInDb()
+  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1)
+})
+
+test('adding a blog fails with 401 if a token is not provided', async () => {
+  const newBlog = {
+    title: 'Type wars',
+    author: 'Robert C. Martin',
+    url: 'http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html',
+    likes: 2
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(401)
+
+  const blogsAtEnd = await helper.blogsInDb()
+  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
 })
 
 after(async () => {

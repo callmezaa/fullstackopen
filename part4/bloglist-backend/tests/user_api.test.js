@@ -135,16 +135,21 @@ describe('when there is initially one user in db', () => {
     const usersAtStart = await helper.usersInDb()
     const rootUser = usersAtStart.find((u) => u.username === 'root')
 
+    const loginResponse = await api
+      .post('/api/login')
+      .send({ username: 'root', password: 'sekret' })
+    const rootToken = loginResponse.body.token
+
     const newBlog = {
       title: 'React patterns',
       author: 'Michael Chan',
       url: 'https://reactpatterns.com/',
-      likes: 7,
-      userId: rootUser.id
+      likes: 7
     }
 
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${rootToken}`)
       .send(newBlog)
       .expect(201)
 
