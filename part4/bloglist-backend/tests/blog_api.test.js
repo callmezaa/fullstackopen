@@ -223,7 +223,8 @@ test('a blog created with a token is attributed to the token user', async () => 
     .expect(201)
     .expect('Content-Type', /application\/json/)
 
-  assert.strictEqual(response.body.user.toString(), userId)
+  assert.strictEqual(response.body.user.id, userId)
+  assert.strictEqual(response.body.user.username, 'root')
 
   const blogsAtEnd = await helper.blogsInDb()
   assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1)
